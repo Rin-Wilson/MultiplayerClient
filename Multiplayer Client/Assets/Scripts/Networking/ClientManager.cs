@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Riptide;
+using System;
 
 public enum ServerToClientId : ushort
 {
@@ -51,12 +52,41 @@ public class ClientManager : MonoBehaviour
     private void Start()
     {
         Client = new Client();
+        Client.Connected += DidConnect;
+        Client.ClientDisconnected += PlayerLeft;
+        Client.Disconnected += DidDisconnect;
+        Client.ConnectionFailed += ConnectionFailed;
+    }
+
+    public void Connect()
+    {
         Client.Connect($"{ip}:{port}");
     }
 
-    // Update is called once per frame
     private void FixedUpdate()
     {
         Client.Update();
+    }
+
+    private void PlayerLeft(object sender, ClientDisconnectedEventArgs e)
+    {
+        Destroy(Player.list[e.Id].gameObject);
+    }
+
+    private void DidDisconnect(object sender, DisconnectedEventArgs e)
+    {
+        foreach (Player player in Player.list.Values)
+            Destroy(player.gameObject);
+
+        UIManager.Singleton.BackToMenu();
+    }
+
+    private void DidConnect(object sender, EventArgs e)
+    {
+        UIManager.Singleton.SendUsername();
+    }
+
+    private void ConnectionFailed(object sender, ConnectionFailedEventArgs e) {
+        UIManager.Singleton.BackToMenu();
     }
 }
